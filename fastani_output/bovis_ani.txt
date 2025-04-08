@@ -1,0 +1,1 @@
+gsaar_scaffolds.fasta	neighbors/Mycobacterium_tuberculosis_variant_bovis.fasta	99.8193	1383	1418

@@ -1,0 +1,3 @@
+NODE_34_length_59116_cov_62.095344	barrnap:0.9	rRNA	3	1615	0	+	.	Name=23S_rRNA;product=23S ribosomal RNA (partial);note=aligned only 49 percent of the 23S ribosomal RNA
+NODE_54_length_5642_cov_31.861815	barrnap:0.9	rRNA	4122	5639	0	+	.	Name=23S_rRNA;product=23S ribosomal RNA (partial);note=aligned only 46 percent of the 23S ribosomal RNA
+NODE_87_length_1160_cov_1.473684	barrnap:0.9	rRNA	2	1160	1.3e-261	-	.	Name=23S_rRNA;product=23S ribosomal RNA (partial);note=aligned only 35 percent of the 23S ribosomal RNA

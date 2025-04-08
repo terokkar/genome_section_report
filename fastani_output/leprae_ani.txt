@@ -1,0 +1,1 @@
+gsaar_scaffolds.fasta	neighbors/Mycobacterium_leprae.fasta	78.4408	426	1418

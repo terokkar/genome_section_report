@@ -1,0 +1,163 @@
+Genome Assembly and Annotation Section Report by Holly Moffett
+Bioinformatics CSU Stanlslaus Spring 2025 Dr. Van Laar
+Mycobacterium tuberculosis
+4/9/2025
+
+# Versions
+SPAdes genome assembler v4.1.0
+ABYSS (ABySS) 2.3.7
+DFAST ver. 1.3.6
+QUAST v5.3.0
+barrnap 0.9
+FastANI version 1.34
+The RAST Server: Rapid Annotations using Subsystems Technology.
+Aziz RK, Bartels D, Best AA, DeJongh M, Disz T, Edwards RA, Formsma K, Gerdes S, Glass EM, Kubal M, Meyer F, Olsen GJ, Olson R, Osterman AL, Overbeek RA, McNeil LK, Paarmann D, Paczian T, Parrello B, Pusch GD, Reich C, Stevens R, Vassieva O, Vonstein V, Wilke A, Zagnitko O.
+BMC Genomics, 2008
+The SEED and the Rapid Annotation of microbial genomes using Subsystems Technology (RAST).
+Overbeek R, Olson R, Pusch GD, Olsen GJ, Davis JJ, Disz T, Edwards RA, Gerdes S, Parrello B, Shukla M, Vonstein V, Wattam AR, Xia F, Stevens R.
+Nucleic Acids Res. 2014
+RASTtk: A modular and extensible implementation of the RAST algorithm for building custom annotation pipelines and annotating batches of genomes.
+Brettin T, Davis JJ, Disz T, Edwards RA, Gerdes S, Olsen GJ, Olson R, Overbeek R, Parrello B, Pusch GD, Shukla M, Thomason JA, Stevens R, Vonstein V, Wattam AR, Xia F.
+Sci Rep., 2015
+BLASTn live version NIH website
+
+# Code used for SPAdes and ABySS assembles
+spades.py -1 Holly_1.fastq.gz -2 Holly_2.fastq.gz -o spadesout
+And
+abyss-pe name=assembly k=96 B=2G in='Holly_1.fastq.gz Holly_2.fastq.gz'
+mkdir abyssout
+mv assembly* abyssout/
+
+# 1) From the ABySS output, create a table for the unitigs, contigs, and scaffolds with the number of each, N50 for each, and predicted genome length.
+|-----------------------------------------------------------------------------|
+| Metric         | Unitigs           | Contigs           | Scaffolds          |
+|----------------|-------------------|-------------------|--------------------|
+| Sequences (n)  | 1328              | 952               | 807                |
+| N50            | 20318             | 43602             | 102143             |
+| Total Length   | 4359219           | 4404906           | 4407708            |
+|-----------------------------------------------------------------------------|
+
+# 2) https://github.com/bcgsc/abyss Links to an external site. This is the link to the documentation for ABySS. In your own words, please summarize the function of each of the commands (e.g., abyss-pe, k, B, etc) that you included in your code.
+ABySS is a genome assembler designed for short reads (Illumina).
+abyss-pe: this is a parallel command that runs multistep assembly from short paired-end reads. It constructs a de Bruijn graph, unitigs, and contigs.
+name: this sets the prefix for output files (assembly-contigs.fa, assembly-6.fa, etc.).
+k: this is the k-mer size used during assembly. This is usually between 20-96 for Illumina. This report used k=96.
+B: this sets the maximum memory (GB) that ABySS can use per process. It helps manage memory usage during graph construction. This report used 2 GB of RAM.
+In: this specifies the input paired-end read files. Holly_1.fastq.gz is the forward reads (R1), Holly_2.fastq.gz is the reverse reads (R2).
+
+# 3) https://ablab.github.io/spades/index.html Links to an external site. This is the documentation for SPAdes. Based on this manual, can you identify how you could modify the code you used to do a hybrid assembly with nanopore reads? Please explain what a hybrid assembly is and why someone might want to do that.
+Hybrid assembly combines short reads like Illumina and long reads like Nanopore for a more complete genome. Short reads are more accurate while longer reads can help fill in gaps.
+In SPAdes the addition of --nanopore and log read file can be used to do a hybrid assembly. Example:
+spades.py -1 Holly_1.fastq.gz -2 Holly_2.fastq.gz --nanopore nanopore_reads.fastq.gz -o spades_hybrid_output
+
+# Code for QUAST
+quast.py spadesout/scaffolds.fasta -o quastspades
+And
+quast.py abyssout/assembly-scaffolds.fa -o quastabyss
+
+# DFAST code
+dfast --genome spadesout/scaffolds.fasta --out dfast_output
+
+# 4) Include a screenshot of the QUAST assembly statistics for the ABySS and SPAdes assembly.
+Screenshot included in screenshot folder and labelled QUAST_ss_of_both_reports.
+
+5) Based on the statistics from your genome, which assembly do you think is best? Why? This is the assembly you can use going forward.
+SPAdes produced a more contiguous and complete assembly with longer contigs and fewer gaps, despite ABySS having fewer total contigs overall. See table comparison of SPAdes and ABySS below.
+|--------------------------------------------------------------------------------------------------|
+| Metric                    | SPAdes         | ABySS          | Better                             |
+|---------------------------|----------------|----------------|------------------------------------|
+| # Contigs (>= 0 bp)       | 3300           | 807            | ABySS (fewer contigs)              |
+|--------------------------------------------------------------------------------------------------|
+| # Contigs (>= 50,000 bp)  | 35             | 33             | Tie                                |
+|--------------------------------------------------------------------------------------------------|
+| Largest Contig            | 231,803 bp     | 208,007 bp     | SPAdes                             |
+|--------------------------------------------------------------------------------------------------|
+| Total Length              | 4,440,956 bp   | 4,411,632 bp   | SPAdes                             |
+|--------------------------------------------------------------------------------------------------|
+| N50                       | 110,915 bp     | 102,417 bp     | SPAdes                             |
+|--------------------------------------------------------------------------------------------------|
+| N90                       | 39,926 bp      | 27,378 bp      | SPAdes                             |
+|--------------------------------------------------------------------------------------------------|
+| L50                       | 15             | 17             | SPAdes (fewer contigs to reach 50%)|
+|--------------------------------------------------------------------------------------------------|
+| # N’s per 100 kbp         | 28.60          | 88.95          | SPAdes (fewer gaps)                |
+|--------------------------------------------------------------------------------------------------|
+| GC Content (%)            | 65.26%         | 65.51%         | Similar                            |
+|--------------------------------------------------------------------------------------------------|
+
+# Code for barrnap
+barrnap --kingdom bac spadesout/scaffolds.fasta > rRNAsequences.gff
+
+# later used barrnap for 23S
+barrnap --kingdom bac gsaar_scaffolds.fasta > rRNAsequences.gff && \
+grep "23S" rRNAsequences.gff > 23S_only.gff && \
+bedtools getfasta -fi gsaar_scaffolds.fasta -bed 23S_only.gff -fo 23S_rRNA.fasta
+
+# ChatGPT was able to extract node_1 for me but it had to be trimmed in order to BLAST it. Chat trimmed it for me. Those files are in test_run.
+
+# SPAdes scaffold was renamed gsaar_scaffolds.fasta.
+
+# barrnap output was renamed 16S_rRNAsequences.fasta.
+
+# 6) How can we use barrnap to figure out what species we have? Why is using the 16S rRNA sequence a good, but imperfect, tool for identifying species identity?
+Barrnap finds the 16S rRNA gene in a genome, which can be run through BLAST to identify the closest matching species. While 16S is useful because it’s conserved across bacteria, it can’t always distinguish between very closely related species.
+* NOTE: 16S rRNA was run through BLASTn (core_nt and refseq_rna) and returned many Streptococcus species with 100% identity. To try and narrow the species down, 23S rRNA and a trimmed node_1 were run. Although the BLASTn refseq_rna of the 23S rRNA sequence matched Mycobacterium bovis with 100% identity, the BLASTn core_nt of 23S and node_1_trimmed matched more closely to Mycobacterium tuberculosis. M. bovis and M. tuberculosis are in the Mycobacterium tuberculosis complex and very similar genetically.
+23S rRNA is conserved and useful for species confirmation, whereas Node 1 is a large portion of the scaffold used for additional identification.
+
+# 7) What species do you have? Include a screenshot of your top NCBI results.
+Mycobacterium tuberculosis (determined through later analysis with FastANI).
+Screenshot in screenshot folder 23S and NODE_1.
+
+# 8) What is genome annotation? Why is it important to do that?
+Genome annotation is used to figure out what different parts of a DNA sequence do. This includes protein coding genes, rRNA genes, regulatory elements (promoters, terminators, etc), tRNA genes, CRISPR loci, pseudogenes, mobile elements (insertion or transposons), and repeat regions. This information can then be used to better understand function, evolution, and classification of an organism.
+
+# 9) Perform a genome annotation using two different programs. Find 3 of the 5 genes/features in your results file and create a table of those results: recA, gyrA, 16S rRNA, rpsB, dnaA. What is the location of the genes you chose? What does each program tell you about the gene? How are the outputs different between the two programs.
+|-----------------------------------------------------------------------------------------------------------------------------|
+| Source       | Gene | Product                                           | Location                            | Length (bp) |
+|--------------|------|---------------------------------------------------|-------------------------------------|-------------|
+| DFAST (GFF)  | gyrA | DNA topoisomerase (ATP-hydrolyzing), subunit A    | sequence0020: 94076–96592 (-)       | 2517        |
+| RAST         | gyrA | DNA gyrase subunit A                              | NODE_20: 96592–94076 (-)            | 2517        |
+|--------------|------|---------------------------------------------------|-------------------------------------|-------------|
+| DFAST (GFF)  | dnaA | Chromosomal replication initiator protein DnaA    | sequence0023: 92241–93764 (+)       | 1524        |
+| RAST         | dnaA | Chromosomal replication initiator protein DnaA    | NODE_23: 92241–93764 (+)            | 1524        |
+|--------------|------|---------------------------------------------------|-------------------------------------|-------------|
+| DFAST (GFF)  | recA | Intein-containing recombinase RecA                | sequence0008: 65450–67822 (-)       | 2373        |
+| RAST         | recA | Protein RecA                                      | NODE_8: 67822–65450 (-)             | 2373        |
+|-----------------------------------------------------------------------------------------------------------------------------|
+DFAST and RAST both take the same genome file but the way they show the results is a bit different. DFAST gives more detailed descriptions of what the genes do, while RAST sticks to simpler names that are easier to recognize.
+Prokka v1.14.6+galaxy1 was also used and produced similar annotation results. Although the data is not included in the table in this report, the Prokka output files are available in the section report folder.
+
+# We have almost finished our analysis. We previously identified the species of our genome. You should download two related genomes from NCBI and run fastANI for determining Average Nucleotide Identity.
+I have the scaffold from SPAdes, M. bovis, M. tuberculosis (reference genome), as well as M. leprae (reference genome) (microbio disease paper subject :) ), and M. canettii CIPT 140010059 (reference genome).
+Although the assignment suggested using two genomes, I chose to run FastANI with four. Since M. bovis and M. tuberculosis are very similar genetically, I included M. canettii and M. leprae to show greater genetic distance. This gave a better comparison across both close and distant relatives within and outside the Mycobacterium tuberculosis complex.
+M. bovis from NCBI is considered a M. tuberculosis variant and its associated genome is not a reference genome. M. Tuberculosis is the reference genome for the species included in the MTBC.
+
+# Genomes are downloaded and placed in folder neighbors with a copy of SPAdes scaffold.
+I was having an issue running all four at once. Running the SPAdes scaffold with one genome at a time worked so I did four FastANI runs with one command and four resulting output .txt.
+fastANI -q gsaar_scaffolds.fasta -r neighbors/Mycobacterium_tuberculosis_H37Rv.fasta -o h37rv_ani.txt && \
+fastANI -q gsaar_scaffolds.fasta -r neighbors/Mycobacterium_tuberculosis_variant_bovis.fasta -o bovis_ani.txt && \
+fastANI -q gsaar_scaffolds.fasta -r neighbors/Mycobacterium_canettii_CIPT_140010059.fasta -o canettii_ani.txt && \
+fastANI -q gsaar_scaffolds.fasta -r neighbors/Mycobacterium_leprae.fasta -o leprae_ani.txt
+all FastANI output .txt were moved to folder fastani_output
+
+# 10) Create a table for your ANI results. How do you interpret these results? What do each of the columns represent? Hint: You can refer to the original paper to find that information.
+|------------------------------------------------------------------------------------------------------------------|
+| Query Genome           | Reference Genome                     | ANI (%) | Matching Fragments  | Total Fragments  |
+|------------------------|--------------------------------------|---------|---------------------|------------------|
+| gsaar_scaffolds.fasta  | M. tuberculosis H37Rv                | 99.93   | 1409                | 1418             |
+|------------------------|--------------------------------------|---------|---------------------|------------------|
+| gsaar_scaffolds.fasta  | M. tuberculosis variant bovis        | 99.82   | 1383                | 1418             |
+|------------------------|--------------------------------------|---------|---------------------|------------------|
+| gsaar_scaffolds.fasta  | M. canettii CIPT 140010059           | 99.20   | 1375                | 1418             |
+|------------------------|--------------------------------------|---------|---------------------|------------------|
+| gsaar_scaffolds.fasta  | M. leprae                            | 78.44   | 426                 | 1418             |
+|------------------------------------------------------------------------------------------------------------------|
+My genome most closely matches Mycobacterium tuberculosis with 99.9% ANI (%).
+The ANI (%) shows how similar the two genomes are. Matching fragments and total fragments show how many parts of the genome matched the SPAdes scaffold.
+
+# I tried to compare the SPAdes scaffold to two Streptococcus species (S. mitis and S. oralis) but the file outputs were all blank. This happened earlier in the project before I had 23S rRNA and node_1 point towards Mycobacterium tuberculosis. I'm not sure why this is. I thought it would be an interesting analysis but it didn't work.
+
+# This report on Mycobacterium tuberculosis is dedicated to the memory of Val Kilmer, who died one week ago today and who played Doc Holliday in Tombstone (1993), a character who was in the later stages of an infection caused by Mycobacterium tuberculosis. 🤠
+"I'm your huckleberry"
+4/8/2025
+- HM

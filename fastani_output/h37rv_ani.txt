@@ -1,0 +1,1 @@
+gsaar_scaffolds.fasta	neighbors/Mycobacterium_tuberculosis_H37Rv.fasta	99.9342	1409	1418

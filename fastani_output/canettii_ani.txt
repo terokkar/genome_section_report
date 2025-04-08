@@ -1,0 +1,1 @@
+gsaar_scaffolds.fasta	neighbors/Mycobacterium_canettii_CIPT_140010059.fasta	99.1991	1375	1418
