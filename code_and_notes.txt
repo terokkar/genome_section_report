@@ -1,5 +1,5 @@
 Genome Assembly and Annotation Section Report by Holly Moffett
-Bioinformatics CSU Stanlislaus Spring 2025 Dr. Van Laar
+Bioinformatics CSU Stanislaus Spring 2025 Dr. Van Laar
 Mycobacterium tuberculosis
 4/9/2025
 
